@@ -1,0 +1,1 @@
+package com.tacomoloco.inventario.dto.request;
