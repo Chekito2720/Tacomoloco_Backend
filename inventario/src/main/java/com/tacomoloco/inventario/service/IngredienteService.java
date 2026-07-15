@@ -15,6 +15,10 @@ public class IngredienteService {
     private final IngredienteRepository ingredienteRepository;
 
     public Ingrediente crear(Ingrediente ingrediente) {
+        if (ingrediente.getStockMinimo() == null) {
+            ingrediente.setStockMinimo(10.0);
+        }
+        ingrediente.actualizarEstado();
         return ingredienteRepository.save(ingrediente);
     }
 
@@ -33,13 +37,14 @@ public class IngredienteService {
     public Ingrediente actualizar(Long id, Ingrediente ingrediente) {
         Ingrediente existente = ingredienteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ingrediente no encontrado con ID: " + id));
-        
+
         existente.setNombre(ingrediente.getNombre());
         existente.setUnidadMedida(ingrediente.getUnidadMedida());
         existente.setCantidadDisponible(ingrediente.getCantidadDisponible());
-        existente.setEstado(ingrediente.getEstado());
+        existente.setStockMinimo(ingrediente.getStockMinimo() != null ? ingrediente.getStockMinimo() : 10.0);
         existente.setCostoUnitario(ingrediente.getCostoUnitario());
-        
+        existente.actualizarEstado();
+
         return ingredienteRepository.save(existente);
     }
 
@@ -48,5 +53,27 @@ public class IngredienteService {
             throw new RuntimeException("Ingrediente no encontrado con ID: " + id);
         }
         ingredienteRepository.deleteById(id);
+    }
+
+    public Ingrediente registrarConsumo(Long id, Double cantidad) {
+        Ingrediente ingrediente = ingredienteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ingrediente no encontrado con ID: " + id));
+
+        if (ingrediente.getCantidadDisponible() < cantidad) {
+            throw new RuntimeException("Stock insuficiente. Disponible: " + ingrediente.getCantidadDisponible() + ", solicitado: " + cantidad);
+        }
+
+        ingrediente.setCantidadDisponible(ingrediente.getCantidadDisponible() - cantidad);
+        ingrediente.actualizarEstado();
+        return ingredienteRepository.save(ingrediente);
+    }
+
+    public Ingrediente reabastecer(Long id, Double cantidad) {
+        Ingrediente ingrediente = ingredienteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ingrediente no encontrado con ID: " + id));
+
+        ingrediente.setCantidadDisponible(ingrediente.getCantidadDisponible() + cantidad);
+        ingrediente.actualizarEstado();
+        return ingredienteRepository.save(ingrediente);
     }
 }

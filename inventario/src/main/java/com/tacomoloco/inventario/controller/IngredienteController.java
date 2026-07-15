@@ -49,4 +49,14 @@ public class IngredienteController {
         ingredienteService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/consumo")
+    public ResponseEntity<Ingrediente> registrarConsumo(@PathVariable Long id, @RequestParam Double cantidad) {
+        return ResponseEntity.ok(ingredienteService.registrarConsumo(id, cantidad));
+    }
+
+    @PostMapping("/{id}/reabastecer")
+    public ResponseEntity<Ingrediente> reabastecer(@PathVariable Long id, @RequestParam Double cantidad) {
+        return ResponseEntity.ok(ingredienteService.reabastecer(id, cantidad));
+    }
 }

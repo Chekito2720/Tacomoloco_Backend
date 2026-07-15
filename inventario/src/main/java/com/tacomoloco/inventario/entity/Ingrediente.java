@@ -26,6 +26,9 @@ public class Ingrediente {
     @Column(nullable = false)
     private Double cantidadDisponible;
 
+    @Column(name = "stock_minimo", nullable = false)
+    private Double stockMinimo = 10.0;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoIngrediente estado;
@@ -35,5 +38,9 @@ public class Ingrediente {
 
     public enum EstadoIngrediente {
         DISPONIBLE, AGOTADO
+    }
+
+    public void actualizarEstado() {
+        this.estado = this.cantidadDisponible <= this.stockMinimo ? EstadoIngrediente.AGOTADO : EstadoIngrediente.DISPONIBLE;
     }
 }

@@ -3,6 +3,7 @@ CREATE TABLE ingrediente (
     nombre             VARCHAR(255) NOT NULL,
     unidad_medida      VARCHAR(50) NOT NULL,
     cantidad_disponible DOUBLE PRECISION NOT NULL,
+    stock_minimo       DOUBLE PRECISION NOT NULL DEFAULT 10,
     estado             VARCHAR(20) NOT NULL DEFAULT 'DISPONIBLE',
     costo_unitario     DECIMAL(10,2) NOT NULL
 );

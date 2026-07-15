@@ -85,7 +85,7 @@ public class ProductoService {
     }
 
     private void mapearProducto(Producto producto, ProductoRequestDTO request) {
-        producto.setNombre(request.getDescripcion());
+        producto.setNombre(request.getNombre());
         producto.setDescripcion(request.getDescripcion());
         producto.setPrecio(request.getPrecio());
         producto.setImagenUrl(request.getImagenUrl());
