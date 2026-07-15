@@ -4,8 +4,10 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -17,21 +19,31 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
+import java.security.KeyFactory;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.UUID;
 
 @Configuration
 public class AuthorizationServerConfig {
 
+    @Value("${oauth2.client.secret:secret}")
+    private String clientSecret;
+
+    @Value("classpath:keys/public.pem")
+    private Resource publicKeyResource;
+
+    @Value("classpath:keys/private.pem")
+    private Resource privateKeyResource;
+
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient gatewayClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("tacomoloco-gateway")
-                .clientSecret("{noop}${OAUTH2_CLIENT_SECRET:secret}")
+                .clientSecret("{noop}" + clientSecret)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
@@ -49,22 +61,35 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource() throws NoSuchAlgorithmException {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+    public JWKSource<SecurityContext> jwkSource() throws Exception {
+        RSAPublicKey publicKey = loadPublicKey();
+        RSAPrivateKey privateKey = loadPrivateKey();
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
+                .keyID("tacomoloco-key-1")
                 .build();
         JWKSet jwkSet = new JWKSet(rsaKey);
         return (jwkSelector, securityContext) -> jwkSelector.select(jwkSet);
     }
 
-    private static KeyPair generateRsaKey() throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
-        return keyPairGenerator.generateKeyPair();
+    private RSAPublicKey loadPublicKey() throws Exception {
+        String content = new String(publicKeyResource.getInputStream().readAllBytes());
+        content = content.replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
+        byte[] keyBytes = Base64.getMimeDecoder().decode(content);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(spec);
+    }
+
+    private RSAPrivateKey loadPrivateKey() throws Exception {
+        String content = new String(privateKeyResource.getInputStream().readAllBytes());
+        content = content.replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+        byte[] keyBytes = Base64.getMimeDecoder().decode(content);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(spec);
     }
 
     @Bean

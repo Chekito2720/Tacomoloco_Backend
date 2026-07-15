@@ -72,4 +72,34 @@ public class GatewayConfig {
                 .filter(LoadBalancerFilterFunctions.lb("authserver"))
                 .build();
     }
+
+    @Bean
+    public RouterFunction<ServerResponse> carritoRoutes() {
+        return GatewayRouterFunctions.route("carrito")
+                .route(GatewayRequestPredicates.path("/api/carrito/**"), HandlerFunctions.http())
+                .filter(FilterFunctions.stripPrefix(2))
+                .filter(LoadBalancerFilterFunctions.lb("carrito"))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(cb -> cb.setStatusCodes("500,502,503")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> pagosRoutes() {
+        return GatewayRouterFunctions.route("pagos")
+                .route(GatewayRequestPredicates.path("/api/pagos/**"), HandlerFunctions.http())
+                .filter(FilterFunctions.stripPrefix(2))
+                .filter(LoadBalancerFilterFunctions.lb("pedidos"))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(cb -> cb.setStatusCodes("500,502,503")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> notificacionesRoutes() {
+        return GatewayRouterFunctions.route("notificaciones")
+                .route(GatewayRequestPredicates.path("/api/notificaciones/**"), HandlerFunctions.http())
+                .filter(FilterFunctions.stripPrefix(2))
+                .filter(LoadBalancerFilterFunctions.lb("pedidos"))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(cb -> cb.setStatusCodes("500,502,503")))
+                .build();
+    }
 }
