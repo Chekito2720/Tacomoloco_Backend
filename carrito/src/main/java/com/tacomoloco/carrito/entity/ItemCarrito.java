@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table(name = "item_carrito")
@@ -20,6 +21,10 @@ public class ItemCarrito {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "carrito_id", nullable = false)
     private Carrito carrito;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grupo_pedido_id")
+    private GrupoPedido grupoPedido;
 
     @Column(name = "producto_id", nullable = false)
     private Long productoId;
@@ -38,4 +43,18 @@ public class ItemCarrito {
 
     @Column(name = "imagen_url")
     private String imagenUrl;
+
+    @OneToMany(mappedBy = "itemCarrito", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ItemPersonalizacion> personalizaciones;
+
+    public BigDecimal calcularSubtotalConExtras() {
+        BigDecimal base = precioUnitario.multiply(BigDecimal.valueOf(cantidad));
+        if (personalizaciones == null || personalizaciones.isEmpty()) {
+            return base;
+        }
+        BigDecimal extras = personalizaciones.stream()
+                .map(ItemPersonalizacion::getCostoExtra)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return base.add(extras);
+    }
 }

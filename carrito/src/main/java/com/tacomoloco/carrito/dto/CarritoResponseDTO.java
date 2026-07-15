@@ -21,6 +21,7 @@ public class CarritoResponseDTO {
     private BigDecimal total;
     private Integer cantidadItems;
     private List<ItemCarritoResponseDTO> items;
+    private List<GrupoPedidoResponseDTO> grupos;
 
     @Data
     @NoArgsConstructor
@@ -34,5 +35,33 @@ public class CarritoResponseDTO {
         private Integer cantidad;
         private BigDecimal precioUnitario;
         private BigDecimal subtotal;
+        private Long grupoPedidoId;
+        private String grupoPedidoNombre;
+        private List<PersonalizacionResponseDTO> personalizaciones;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PersonalizacionResponseDTO {
+        private Long id;
+        private Long ingredienteId;
+        private String nombreIngrediente;
+        private String tipo;
+        private BigDecimal costoExtra;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GrupoPedidoResponseDTO {
+        private Long id;
+        private String nombre;
+        private String nota;
+        private Integer orden;
+        private BigDecimal subtotal;
+        private List<ItemCarritoResponseDTO> items;
     }
 }

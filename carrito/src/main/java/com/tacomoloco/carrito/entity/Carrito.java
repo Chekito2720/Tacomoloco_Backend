@@ -35,6 +35,10 @@ public class Carrito {
     @OrderBy("id ASC")
     private List<ItemCarrito> items;
 
+    @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("orden ASC")
+    private List<GrupoPedido> grupos;
+
     @PrePersist
     protected void onCreate() {
         this.fechaCreacion = LocalDateTime.now();

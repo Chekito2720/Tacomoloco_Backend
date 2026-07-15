@@ -1,6 +1,5 @@
 package com.tacomoloco.carrito.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,8 +15,8 @@ import java.util.List;
 public class PedidoCheckoutRequestDTO {
     private Long clienteId;
     private String notasCliente;
-    private List<DetalleCheckoutDTO> detalles;
     private BigDecimal total;
+    private List<DetalleCheckoutDTO> detalles;
 
     @Data
     @NoArgsConstructor
@@ -29,5 +28,20 @@ public class PedidoCheckoutRequestDTO {
         private Integer cantidad;
         private BigDecimal precioUnitario;
         private BigDecimal subtotal;
+        private Long grupoPedidoId;
+        private String grupoNombre;
+        private String grupoNota;
+        private List<PersonalizacionCheckoutDTO> personalizaciones;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PersonalizacionCheckoutDTO {
+        private Long ingredienteId;
+        private String tipo;
+        private BigDecimal costoExtra;
+        private String nombreIngrediente;
     }
 }

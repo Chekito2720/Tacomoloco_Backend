@@ -27,6 +27,11 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.obtenerPorId(id));
     }
 
+    @GetMapping("/{id}/ingredientes")
+    public ResponseEntity<List<ProductoResponseDTO.IngredienteResponseDTO>> obtenerIngredientes(@PathVariable Long id) {
+        return ResponseEntity.ok(productoService.obtenerIngredientes(id));
+    }
+
     @GetMapping
     public ResponseEntity<List<ProductoResponseDTO>> listarTodos() {
         return ResponseEntity.ok(productoService.listarTodos());

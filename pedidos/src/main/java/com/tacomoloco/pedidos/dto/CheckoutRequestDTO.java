@@ -28,5 +28,20 @@ public class CheckoutRequestDTO {
         private Integer cantidad;
         private BigDecimal precioUnitario;
         private BigDecimal subtotal;
+        private Long grupoPedidoId;
+        private String grupoNombre;
+        private String grupoNota;
+        private List<PersonalizacionCheckoutDTO> personalizaciones;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PersonalizacionCheckoutDTO {
+        private Long ingredienteId;
+        private String tipo;
+        private BigDecimal costoExtra;
+        private String nombreIngrediente;
     }
 }

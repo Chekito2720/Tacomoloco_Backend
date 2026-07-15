@@ -48,6 +48,11 @@ public class PedidoService {
     }
 
     @Transactional
+    public PersonalizacionIngrediente agregarPersonalizacion(PersonalizacionIngrediente personalizacion) {
+        return personalizacionIngredienteRepository.save(personalizacion);
+    }
+
+    @Transactional
     public Pago simularPago(Pedido pedido, String metodo) {
         Pago pago = new Pago();
         pago.setPedido(pedido);

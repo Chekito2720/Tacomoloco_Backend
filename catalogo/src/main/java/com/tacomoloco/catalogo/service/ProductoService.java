@@ -84,6 +84,29 @@ public class ProductoService {
         productoRepository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
+    public List<ProductoResponseDTO.IngredienteResponseDTO> obtenerIngredientes(Long id) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con ID: " + id));
+
+        if (producto.getIngredientes() == null) {
+            return List.of();
+        }
+
+        return producto.getIngredientes().stream()
+                .map(pi -> {
+                    IngredienteDTO ing = ingredienteClient.getIngredienteById(pi.getIngredienteId());
+                    ProductoResponseDTO.IngredienteResponseDTO ingDTO = new ProductoResponseDTO.IngredienteResponseDTO();
+                    ingDTO.setIngredienteId(pi.getIngredienteId());
+                    ingDTO.setNombreIngrediente(ing != null ? ing.getNombre() : "N/A");
+                    ingDTO.setUnidadMedida(ing != null ? ing.getUnidadMedida() : "N/A");
+                    ingDTO.setCantidadRequerida(pi.getCantidadRequerida());
+                    ingDTO.setCostoUnitario(ing != null ? ing.getCostoUnitario() : BigDecimal.ZERO);
+                    return ingDTO;
+                })
+                .collect(Collectors.toList());
+    }
+
     private void mapearProducto(Producto producto, ProductoRequestDTO request) {
         producto.setNombre(request.getNombre());
         producto.setDescripcion(request.getDescripcion());

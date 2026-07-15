@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,13 +34,33 @@ public class PagoService {
                 detalle.setPrecioUnitario(detalleReq.getPrecioUnitario());
                 detalle.setSubtotal(detalleReq.getSubtotal());
                 pedidoService.agregarDetalle(detalle);
+
+                if (detalleReq.getPersonalizaciones() != null) {
+                    for (CheckoutRequestDTO.PersonalizacionCheckoutDTO persReq : detalleReq.getPersonalizaciones()) {
+                        PersonalizacionIngrediente pers = new PersonalizacionIngrediente();
+                        pers.setDetallePedido(detalle);
+                        pers.setIngredienteId(persReq.getIngredienteId());
+                        pers.setTipo(PersonalizacionIngrediente.TipoPersonalizacion.valueOf(persReq.getTipo()));
+                        pers.setCostoExtra(persReq.getCostoExtra() != null ? persReq.getCostoExtra() : BigDecimal.ZERO);
+                        pedidoService.agregarPersonalizacion(pers);
+                    }
+                }
             }
         }
 
         Pago pago = pedidoService.simularPago(pedido, "TACOMOLOCO_SIMULADO");
 
-        pedidoService.crearNotificacion(pedido,
-                "Tu pedido #" + pedido.getId() + " ha sido recibido y esta en preparacion. Total: $" + pedido.getTotal());
+        String nombresGrupos = request.getDetalles() != null ? request.getDetalles().stream()
+                .filter(d -> d.getGrupoNombre() != null && !d.getGrupoNombre().isBlank())
+                .map(CheckoutRequestDTO.DetalleCheckoutDTO::getGrupoNombre)
+                .distinct()
+                .collect(Collectors.joining(", ")) : "";
+
+        String mensaje = "Tu pedido #" + pedido.getId() + " ha sido recibido y esta en preparacion. Total: $" + pedido.getTotal();
+        if (!nombresGrupos.isEmpty()) {
+            mensaje += " | Grupos: " + nombresGrupos;
+        }
+        pedidoService.crearNotificacion(pedido, mensaje);
 
         return CheckoutResponseDTO.builder()
                 .pedidoId(pedido.getId())
