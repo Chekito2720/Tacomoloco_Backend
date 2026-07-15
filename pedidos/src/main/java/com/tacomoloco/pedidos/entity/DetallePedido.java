@@ -32,4 +32,13 @@ public class DetallePedido {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
+
+    @Column(name = "nombre_producto")
+    private String nombreProducto;
+
+    @Column(name = "grupo_nombre")
+    private String grupoNombre;
+
+    @Column(name = "grupo_nota")
+    private String grupoNota;
 }
