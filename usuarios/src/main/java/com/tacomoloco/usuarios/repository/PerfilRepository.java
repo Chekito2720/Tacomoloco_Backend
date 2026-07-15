@@ -1,12 +1,12 @@
 package com.tacomoloco.usuarios.repository;
 
-import com.tacomoloco.usuarios.model.entity.Perfil;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+
+import com.tacomoloco.usuarios.entity.Perfil;
 
 import java.util.Optional;
 
-@Repository
+
 public interface PerfilRepository extends JpaRepository<Perfil, Long> {
     Optional<Perfil> findByUsuarioId(Long usuarioId);
 }

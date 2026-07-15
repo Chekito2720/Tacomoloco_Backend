@@ -1,1 +1,0 @@
-package com.tacomoloco.catalogo.dto.request;

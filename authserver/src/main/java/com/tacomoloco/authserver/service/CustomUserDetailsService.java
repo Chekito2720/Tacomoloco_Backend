@@ -1,6 +1,6 @@
 package com.tacomoloco.authserver.service;
 
-import com.tacomoloco.authserver.model.entity.User;
+import com.tacomoloco.authserver.entity.User;
 import com.tacomoloco.authserver.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

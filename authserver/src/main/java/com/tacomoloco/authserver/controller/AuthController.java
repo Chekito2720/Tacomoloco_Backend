@@ -3,7 +3,7 @@ package com.tacomoloco.authserver.controller;
 import com.tacomoloco.authserver.dto.request.LoginRequest;
 import com.tacomoloco.authserver.dto.request.RegisterRequest;
 import com.tacomoloco.authserver.dto.response.LoginResponse;
-import com.tacomoloco.authserver.model.entity.User;
+import com.tacomoloco.authserver.entity.User;
 import com.tacomoloco.authserver.repository.UserRepository;
 import com.tacomoloco.authserver.service.TokenService;
 import jakarta.validation.Valid;
