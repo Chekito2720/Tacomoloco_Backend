@@ -2,10 +2,9 @@ package com.tacomoloco.pedidos.controller;
 
 import com.tacomoloco.pedidos.dto.CheckoutRequestDTO;
 import com.tacomoloco.pedidos.dto.CheckoutResponseDTO;
-import com.tacomoloco.pedidos.entity.DetallePedido;
-import com.tacomoloco.pedidos.entity.Notificacion;
-import com.tacomoloco.pedidos.entity.Pago;
-import com.tacomoloco.pedidos.entity.Pedido;
+import com.tacomoloco.pedidos.dto.PedidoAdminDTO;
+import com.tacomoloco.pedidos.dto.PedidoResumenDTO;
+import com.tacomoloco.pedidos.entity.*;
 import com.tacomoloco.pedidos.service.NotificacionService;
 import com.tacomoloco.pedidos.service.PagoService;
 import com.tacomoloco.pedidos.service.PedidoService;
@@ -33,9 +32,12 @@ public class PedidoController {
 
     @GetMapping
     public ResponseEntity<List<Pedido>> obtenerPorFechaEntre(
-            @RequestParam("inicio") LocalDateTime inicio,
-            @RequestParam("fin") LocalDateTime fin) {
-        return ResponseEntity.ok(pedidoService.obtenerPorFechaEntre(inicio, fin));
+            @RequestParam(value = "inicio", required = false) LocalDateTime inicio,
+            @RequestParam(value = "fin", required = false) LocalDateTime fin) {
+        if (inicio != null && fin != null) {
+            return ResponseEntity.ok(pedidoService.obtenerPorFechaEntre(inicio, fin));
+        }
+        return ResponseEntity.ok(pedidoService.obtenerTodos());
     }
 
     @GetMapping("/{id}")
@@ -51,14 +53,39 @@ public class PedidoController {
     }
 
     @GetMapping("/estado/{estado}")
-    public ResponseEntity<List<Pedido>> obtenerPorEstado(@PathVariable String estado) {
+    public ResponseEntity<List<Pedido>> obtenerPorEstado(
+            @PathVariable String estado,
+            @RequestParam(value = "inicio", required = false) LocalDateTime inicio,
+            @RequestParam(value = "fin", required = false) LocalDateTime fin) {
         Pedido.EstadoPedido estadoEnum = Pedido.EstadoPedido.valueOf(estado.toUpperCase());
+        if (inicio != null && fin != null) {
+            return ResponseEntity.ok(pedidoService.obtenerPorEstadoYFecha(estadoEnum, inicio, fin));
+        }
         return ResponseEntity.ok(pedidoService.obtenerPorEstado(estadoEnum));
     }
 
     @PatchMapping("/{id}/estado")
-    public ResponseEntity<Pedido> actualizarEstado(@PathVariable Long id, @RequestParam Pedido.EstadoPedido estado) {
-        return ResponseEntity.ok(pedidoService.actualizarEstado(id, estado));
+    public ResponseEntity<PedidoAdminDTO> actualizarEstado(
+            @PathVariable Long id,
+            @RequestParam Pedido.EstadoPedido estado,
+            @RequestHeader(value = "X-Usuario-Id", required = false) Long usuarioId) {
+        return ResponseEntity.ok(pedidoService.actualizarEstado(id, estado,
+                usuarioId != null ? usuarioId : 0L));
+    }
+
+    @GetMapping("/admin")
+    public ResponseEntity<List<PedidoResumenDTO>> obtenerTodosAdmin(
+            @RequestParam(value = "estado", required = false) String estado) {
+        if (estado != null && !estado.isBlank()) {
+            Pedido.EstadoPedido estadoEnum = Pedido.EstadoPedido.valueOf(estado.toUpperCase());
+            return ResponseEntity.ok(pedidoService.obtenerResumenesPorEstado(estadoEnum));
+        }
+        return ResponseEntity.ok(pedidoService.obtenerResumenesTodos());
+    }
+
+    @GetMapping("/admin/{id}")
+    public ResponseEntity<PedidoAdminDTO> obtenerDetalleAdmin(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.obtenerPedidoAdmin(id));
     }
 
     @GetMapping("/{id}/detalles")
@@ -76,6 +103,11 @@ public class PedidoController {
     @GetMapping("/{id}/notificaciones")
     public ResponseEntity<List<Notificacion>> obtenerNotificaciones(@PathVariable Long id) {
         return ResponseEntity.ok(pedidoService.obtenerNotificaciones(id));
+    }
+
+    @GetMapping("/{id}/historial")
+    public ResponseEntity<List<HistorialEstadoPedido>> obtenerHistorial(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.obtenerHistorialEstados(id));
     }
 
     @GetMapping("/notificaciones/no-leidas/{clienteId}")
