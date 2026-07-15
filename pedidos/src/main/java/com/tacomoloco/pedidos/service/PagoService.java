@@ -33,6 +33,9 @@ public class PagoService {
                 detalle.setCantidad(detalleReq.getCantidad());
                 detalle.setPrecioUnitario(detalleReq.getPrecioUnitario());
                 detalle.setSubtotal(detalleReq.getSubtotal());
+                detalle.setNombreProducto(detalleReq.getNombreProducto());
+                detalle.setGrupoNombre(detalleReq.getGrupoNombre());
+                detalle.setGrupoNota(detalleReq.getGrupoNota());
                 pedidoService.agregarDetalle(detalle);
 
                 if (detalleReq.getPersonalizaciones() != null) {
@@ -42,6 +45,7 @@ public class PagoService {
                         pers.setIngredienteId(persReq.getIngredienteId());
                         pers.setTipo(PersonalizacionIngrediente.TipoPersonalizacion.valueOf(persReq.getTipo()));
                         pers.setCostoExtra(persReq.getCostoExtra() != null ? persReq.getCostoExtra() : BigDecimal.ZERO);
+                        pers.setNombreIngrediente(persReq.getNombreIngrediente());
                         pedidoService.agregarPersonalizacion(pers);
                     }
                 }

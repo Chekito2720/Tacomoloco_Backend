@@ -32,9 +32,12 @@ public class PedidoAdminDTO {
     public static class DetalleAdminDTO {
         private Long id;
         private Long productoId;
+        private String nombreProducto;
         private Integer cantidad;
         private BigDecimal precioUnitario;
         private BigDecimal subtotal;
+        private String grupoNombre;
+        private String grupoNota;
         private List<PersonalizacionAdminDTO> personalizaciones;
     }
 
@@ -44,6 +47,7 @@ public class PedidoAdminDTO {
     @Builder
     public static class PersonalizacionAdminDTO {
         private Long ingredienteId;
+        private String nombreIngrediente;
         private String tipo;
         private BigDecimal costoExtra;
     }

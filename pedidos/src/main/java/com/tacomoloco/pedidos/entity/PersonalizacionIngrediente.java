@@ -31,6 +31,9 @@ public class PersonalizacionIngrediente {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal costoExtra;
 
+    @Column(name = "nombre_ingrediente")
+    private String nombreIngrediente;
+
     public enum TipoPersonalizacion {
         AGREGADO, QUITADO
     }
