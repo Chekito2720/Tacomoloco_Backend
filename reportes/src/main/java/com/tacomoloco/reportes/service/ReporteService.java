@@ -1,12 +1,9 @@
 package com.tacomoloco.reportes.service;
 
+import com.tacomoloco.reportes.client.CatalogoClient;
 import com.tacomoloco.reportes.client.InventarioClient;
 import com.tacomoloco.reportes.client.PedidoClient;
-import com.tacomoloco.reportes.dto.DetallePedidoDTO;
-import com.tacomoloco.reportes.dto.IngredienteDTO;
-import com.tacomoloco.reportes.dto.PedidoDTO;
-import com.tacomoloco.reportes.dto.ReporteComprasDTO;
-import com.tacomoloco.reportes.dto.ReporteInventarioDTO;
+import com.tacomoloco.reportes.dto.*;
 import com.tacomoloco.reportes.entity.ReporteGenerado;
 import com.tacomoloco.reportes.entity.VentaResumen;
 import com.tacomoloco.reportes.repository.ReporteGeneradoRepository;
@@ -19,9 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +26,7 @@ public class ReporteService {
 
     private final PedidoClient pedidoClient;
     private final InventarioClient inventarioClient;
+    private final CatalogoClient catalogoClient;
     private final VentaResumenRepository ventaResumenRepository;
     private final ReporteGeneradoRepository reporteGeneradoRepository;
 
@@ -41,37 +37,46 @@ public class ReporteService {
 
         List<PedidoDTO> pedidos = pedidoClient.getPedidosByFechaBetween(inicio, fin);
 
-        BigDecimal totalCompras = pedidos.stream()
+        List<PedidoDTO> entregados = pedidos.stream()
                 .filter(p -> "ENTREGADO".equals(p.getEstado()))
+                .collect(Collectors.toList());
+
+        BigDecimal totalCompras = entregados.stream()
                 .map(PedidoDTO::getTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        Map<Long, Integer> productoCantidad = pedidos.stream()
-                .filter(p -> "ENTREGADO".equals(p.getEstado()))
+        Map<Long, Integer> productoCantidad = entregados.stream()
                 .flatMap(p -> p.getDetalles().stream())
                 .collect(Collectors.groupingBy(
                         DetallePedidoDTO::getProductoId,
                         Collectors.summingInt(DetallePedidoDTO::getCantidad)
                 ));
 
+        Map<Long, BigDecimal> productoTotal = entregados.stream()
+                .flatMap(p -> p.getDetalles().stream())
+                .collect(Collectors.groupingBy(
+                        DetallePedidoDTO::getProductoId,
+                        Collectors.reducing(BigDecimal.ZERO, DetallePedidoDTO::getSubtotal, BigDecimal::add)
+                ));
+
         List<ReporteComprasDTO.ResumenProductoDTO> productosMasVendidos = productoCantidad.entrySet().stream()
                 .map(e -> {
                     ReporteComprasDTO.ResumenProductoDTO dto = new ReporteComprasDTO.ResumenProductoDTO();
                     dto.setProductoId(e.getKey());
-                    dto.setProductoNombre("Producto " + e.getKey());
+                    dto.setProductoNombre(obtenerNombreProducto(e.getKey()));
                     dto.setCantidadTotal(e.getValue());
-                    dto.setTotalVendido(BigDecimal.ZERO);
+                    dto.setTotalVendido(productoTotal.getOrDefault(e.getKey(), BigDecimal.ZERO));
                     return dto;
                 })
                 .sorted(Comparator.comparing(ReporteComprasDTO.ResumenProductoDTO::getCantidadTotal).reversed())
-                .limit(10)
+                .limit(5)
                 .collect(Collectors.toList());
 
         ReporteComprasDTO reporte = new ReporteComprasDTO();
         reporte.setFechaInicio(inicio.toLocalDate());
         reporte.setFechaFin(fin.toLocalDate());
         reporte.setTotalCompras(totalCompras);
-        reporte.setTotalPedidos((int) pedidos.stream().filter(p -> "ENTREGADO".equals(p.getEstado())).count());
+        reporte.setTotalPedidos(entregados.size());
         reporte.setProductosMasVendidos(productosMasVendidos);
         reporte.setIngredientesConsumidos(List.of());
 
@@ -114,6 +119,90 @@ public class ReporteService {
 
         guardarRegistroReporte(usuarioId, ReporteGenerado.TipoReporte.INGREDIENTES, "inventario-" + LocalDate.now());
         return reporte;
+    }
+
+    @Transactional
+    public ReporteVentasDTO generarTopProductos(int year, int month, Long usuarioId) {
+        LocalDateTime inicio = LocalDate.of(year, month, 1).atStartOfDay();
+        LocalDateTime fin = inicio.plusMonths(1).minusNanos(1);
+
+        List<PedidoDTO> pedidos = pedidoClient.getPedidosByFechaBetween(inicio, fin);
+
+        List<PedidoDTO> entregados = pedidos.stream()
+                .filter(p -> "ENTREGADO".equals(p.getEstado()))
+                .collect(Collectors.toList());
+
+        BigDecimal totalCompras = entregados.stream()
+                .map(PedidoDTO::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Map<Long, Integer> productoCantidad = entregados.stream()
+                .flatMap(p -> p.getDetalles().stream())
+                .collect(Collectors.groupingBy(
+                        DetallePedidoDTO::getProductoId,
+                        Collectors.summingInt(DetallePedidoDTO::getCantidad)
+                ));
+
+        Map<Long, BigDecimal> productoTotal = entregados.stream()
+                .flatMap(p -> p.getDetalles().stream())
+                .collect(Collectors.groupingBy(
+                        DetallePedidoDTO::getProductoId,
+                        Collectors.reducing(BigDecimal.ZERO, DetallePedidoDTO::getSubtotal, BigDecimal::add)
+                ));
+
+        int[] posicion = {1};
+        List<ReporteVentasDTO.ProductoTopDTO> topProductos = productoCantidad.entrySet().stream()
+                .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed())
+                .limit(5)
+                .map(e -> {
+                    String nombre = obtenerNombreProducto(e.getKey());
+                    String categoria = obtenerCategoriaProducto(e.getKey());
+
+                    VentaResumen venta = new VentaResumen();
+                    venta.setFecha(inicio.toLocalDate());
+                    venta.setProductoId(e.getKey());
+                    venta.setCantidadVendida(e.getValue());
+                    venta.setTotalVenta(productoTotal.getOrDefault(e.getKey(), BigDecimal.ZERO));
+                    ventaResumenRepository.save(venta);
+
+                    return ReporteVentasDTO.ProductoTopDTO.builder()
+                            .productoId(e.getKey())
+                            .productoNombre(nombre)
+                            .categoria(categoria)
+                            .cantidadTotal(e.getValue())
+                            .totalVendido(productoTotal.getOrDefault(e.getKey(), BigDecimal.ZERO))
+                            .posicion(posicion[0]++)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        guardarRegistroReporte(usuarioId, ReporteGenerado.TipoReporte.VENTAS, year + "-" + month);
+
+        return ReporteVentasDTO.builder()
+                .periodo(year + "-" + String.format("%02d", month))
+                .totalCompras(totalCompras)
+                .totalPedidos(entregados.size())
+                .topProductos(topProductos)
+                .build();
+    }
+
+    private String obtenerNombreProducto(Long productoId) {
+        try {
+            ProductoCatalogoDTO producto = catalogoClient.getProductoById(productoId);
+            return producto != null ? producto.getNombre() : "Producto " + productoId;
+        } catch (Exception e) {
+            log.warn("No se pudo obtener el producto {} del catalogo: {}", productoId, e.getMessage());
+            return "Producto " + productoId;
+        }
+    }
+
+    private String obtenerCategoriaProducto(Long productoId) {
+        try {
+            ProductoCatalogoDTO producto = catalogoClient.getProductoById(productoId);
+            return producto != null ? producto.getCategoria() : "N/A";
+        } catch (Exception e) {
+            return "N/A";
+        }
     }
 
     private void guardarRegistroReporte(Long usuarioId, ReporteGenerado.TipoReporte tipo, String parametros) {
