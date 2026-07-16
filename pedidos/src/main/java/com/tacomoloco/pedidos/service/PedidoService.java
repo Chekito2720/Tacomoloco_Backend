@@ -290,10 +290,18 @@ public class PedidoService {
         };
     }
 
+    private String mensajeEstadoPago(Pago.EstadoPago estado) {
+        return switch (estado) {
+            case SIMULADO_EXITOSO -> "Pago simulado exitosamente. En el futuro se conectara con un sistema de pago real.";
+            case SIMULADO_FALLIDO -> "El pago simulado ha fallado. Intentalo de nuevo.";
+        };
+    }
+
     private PedidoSeguimientoDTO convertirASeguimientoDTO(Pedido pedido) {
         List<DetallePedido> detalles = detallePedidoRepository.findByPedidoId(pedido.getId());
         List<HistorialEstadoPedido> historial = historialEstadoPedidoRepository.findByPedidoIdOrderByFechaCambioAsc(pedido.getId());
         List<Notificacion> notificaciones = notificacionRepository.findByPedidoId(pedido.getId());
+        Optional<Pago> pago = pagoRepository.findByPedidoId(pedido.getId());
 
         return PedidoSeguimientoDTO.builder()
                 .id(pedido.getId())
@@ -303,6 +311,8 @@ public class PedidoService {
                 .total(pedido.getTotal())
                 .notasCliente(pedido.getNotasCliente())
                 .cantidadItems(detalles.size())
+                .estadoPago(pago.map(p -> p.getEstado().name()).orElse("SIN_PAGO"))
+                .estadoPagoMensaje(pago.map(p -> mensajeEstadoPago(p.getEstado())).orElse("Pago no registrado aun"))
                 .items(detalles.stream().map(d -> {
                     List<PersonalizacionIngrediente> pers =
                             personalizacionIngredienteRepository.findByDetallePedidoId(d.getId());
