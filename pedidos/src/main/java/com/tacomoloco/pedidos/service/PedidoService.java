@@ -159,6 +159,51 @@ public class PedidoService {
         return convertirAAdminDTO(pedido);
     }
 
+    @Transactional
+    public PedidoAdminDTO cancelarPedido(Long pedidoId, Long clienteId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido no encontrado con ID: " + pedidoId));
+
+        if (!pedido.getClienteId().equals(clienteId)) {
+            throw new RuntimeException("Solo el cliente dueno del pedido puede cancelarlo");
+        }
+
+        if (pedido.getEstado() == Pedido.EstadoPedido.ENTREGADO || pedido.getEstado() == Pedido.EstadoPedido.CANCELADO) {
+            throw new RuntimeException("No se puede cancelar un pedido en estado " + pedido.getEstado().name());
+        }
+
+        String estadoAnterior = pedido.getEstado().name();
+
+        HistorialEstadoPedido historial = new HistorialEstadoPedido();
+        historial.setPedido(pedido);
+        historial.setEstadoAnterior(estadoAnterior);
+        historial.setEstadoNuevo(Pedido.EstadoPedido.CANCELADO.name());
+        historial.setUsuarioId(clienteId);
+        historialEstadoPedidoRepository.save(historial);
+
+        pedido.setEstado(Pedido.EstadoPedido.CANCELADO);
+        pedidoRepository.save(pedido);
+
+        Notificacion notificacion = new Notificacion();
+        notificacion.setPedido(pedido);
+        notificacion.setClienteId(pedido.getClienteId());
+        notificacion.setMensaje("Has cancelado tu pedido #" + pedido.getId() + ". Si fue un error, haz un nuevo pedido.");
+        notificacionRepository.save(notificacion);
+
+        return convertirAAdminDTO(pedido);
+    }
+
+    public PedidoSeguimientoDTO obtenerSeguimiento(Long pedidoId, Long clienteId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido no encontrado con ID: " + pedidoId));
+
+        if (!pedido.getClienteId().equals(clienteId)) {
+            throw new RuntimeException("No tienes acceso a este pedido");
+        }
+
+        return convertirASeguimientoDTO(pedido);
+    }
+
     public List<HistorialEstadoPedido> obtenerHistorialEstados(Long pedidoId) {
         return historialEstadoPedidoRepository.findByPedidoIdOrderByFechaCambioAsc(pedidoId);
     }
@@ -233,5 +278,64 @@ public class PedidoService {
             case ENTREGADO -> "Entregado";
             case CANCELADO -> "Cancelado";
         };
+    }
+
+    private String mensajeEstado(Pedido.EstadoPedido estado) {
+        return switch (estado) {
+            case PENDIENTE -> "Tu pedido ha sido recibido y esta pendiente de revision";
+            case EN_PREPARACION -> "Estamos preparando tu pedido con mucho amor";
+            case LISTO -> "Tu pedido esta listo y pronto sera entregado";
+            case ENTREGADO -> "Tu pedido ha sido entregado. Disfruta!";
+            case CANCELADO -> "Este pedido ha sido cancelado";
+        };
+    }
+
+    private PedidoSeguimientoDTO convertirASeguimientoDTO(Pedido pedido) {
+        List<DetallePedido> detalles = detallePedidoRepository.findByPedidoId(pedido.getId());
+        List<HistorialEstadoPedido> historial = historialEstadoPedidoRepository.findByPedidoIdOrderByFechaCambioAsc(pedido.getId());
+        List<Notificacion> notificaciones = notificacionRepository.findByPedidoId(pedido.getId());
+
+        return PedidoSeguimientoDTO.builder()
+                .id(pedido.getId())
+                .estado(pedido.getEstado().name())
+                .estadoMensaje(mensajeEstado(pedido.getEstado()))
+                .fechaCreacion(pedido.getFechaCreacion())
+                .total(pedido.getTotal())
+                .notasCliente(pedido.getNotasCliente())
+                .cantidadItems(detalles.size())
+                .items(detalles.stream().map(d -> {
+                    List<PersonalizacionIngrediente> pers =
+                            personalizacionIngredienteRepository.findByDetallePedidoId(d.getId());
+
+                    List<String> persTexto = pers.stream()
+                            .map(p -> p.getTipo().name() + " " +
+                                    (p.getNombreIngrediente() != null ? p.getNombreIngrediente() : "Ingrediente #" + p.getIngredienteId()) +
+                                    (p.getCostoExtra().compareTo(java.math.BigDecimal.ZERO) > 0 ? " (+$" + p.getCostoExtra() + ")" : ""))
+                            .collect(Collectors.toList());
+
+                    return PedidoSeguimientoDTO.ItemSeguimientoDTO.builder()
+                            .nombreProducto(d.getNombreProducto() != null ? d.getNombreProducto() : "Producto #" + d.getProductoId())
+                            .cantidad(d.getCantidad())
+                            .subtotal(d.getSubtotal())
+                            .grupoNombre(d.getGrupoNombre())
+                            .personalizaciones(persTexto)
+                            .build();
+                }).collect(Collectors.toList()))
+                .historial(historial.stream()
+                        .map(h -> PedidoSeguimientoDTO.HistorialSeguimientoDTO.builder()
+                                .mensaje("Cambio de " + (h.getEstadoAnterior() != null ? traducirEstado(Pedido.EstadoPedido.valueOf(h.getEstadoAnterior())) : "nuevo pedido") +
+                                        " a " + traducirEstado(Pedido.EstadoPedido.valueOf(h.getEstadoNuevo())))
+                                .fecha(h.getFechaCambio())
+                                .build())
+                        .collect(Collectors.toList()))
+                .notificaciones(notificaciones.stream()
+                        .map(n -> PedidoSeguimientoDTO.NotificacionSeguimientoDTO.builder()
+                                .id(n.getId())
+                                .mensaje(n.getMensaje())
+                                .fecha(n.getFechaEnvio())
+                                .leida(n.getLeido())
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
     }
 }
