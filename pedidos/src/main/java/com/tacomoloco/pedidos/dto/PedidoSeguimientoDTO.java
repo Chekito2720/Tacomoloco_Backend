@@ -21,6 +21,8 @@ public class PedidoSeguimientoDTO {
     private BigDecimal total;
     private String notasCliente;
     private Integer cantidadItems;
+    private String estadoPago;
+    private String estadoPagoMensaje;
     private List<ItemSeguimientoDTO> items;
     private List<HistorialSeguimientoDTO> historial;
     private List<NotificacionSeguimientoDTO> notificaciones;
