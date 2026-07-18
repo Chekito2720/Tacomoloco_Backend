@@ -13,4 +13,5 @@ public class LoginResponse {
     private String tokenType;
     private long expiresIn;
     private String scope;
+    private String role;
 }

@@ -16,13 +16,14 @@ public class TokenService {
         this.jwtEncoder = jwtEncoder;
     }
 
-    public String generateToken(String subject, String scope) {
+    public String generateToken(String subject, String scope, String role) {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("http://localhost:9000")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(3600))
                 .subject(subject)
                 .claim("scope", scope)
+                .claim("role", role)
                 .build();
 
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();

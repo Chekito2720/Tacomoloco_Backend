@@ -51,8 +51,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String token = tokenService.generateToken(user.getUsername(), "read write");
-        LoginResponse response = new LoginResponse(token, "Bearer", 3600, "read write");
+        String token = tokenService.generateToken(user.getUsername(), "read write", user.getRole());
+        LoginResponse response = new LoginResponse(token, "Bearer", 3600, "read write", user.getRole());
         return ResponseEntity.ok(response);
     }
 }
