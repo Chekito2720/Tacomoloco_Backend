@@ -12,9 +12,9 @@ import java.util.List;
 @FeignClient(name = "inventario", url = "${inventario.service.url:http://localhost:8082}")
 public interface InventarioClient {
 
-    @GetMapping("/api/ingredientes")
+    @GetMapping("/inventario")
     List<IngredienteDTO> getAllIngredientes();
 
-    @GetMapping("/api/ingredientes/{id}")
+    @GetMapping("/inventario/{id}")
     IngredienteDTO getIngredienteById(@PathVariable Long id);
 }

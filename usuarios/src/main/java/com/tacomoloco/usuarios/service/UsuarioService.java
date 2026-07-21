@@ -158,13 +158,19 @@ public class UsuarioService {
     }
 
     private UsuarioResponseDTO convertirAResponseDTO(Usuario usuario) {
-        Perfil perfil = perfilRepository.findByUsuarioId(usuario.getId()).orElse(null);
+        Long usuarioId = usuario.getId();
+        Perfil perfil = null;
+        try {
+            perfil = perfilRepository.findByUsuarioId(usuarioId).orElse(null);
+        } catch (Exception e) {
+            perfil = null;
+        }
 
         return UsuarioResponseDTO.builder()
                 .id(usuario.getId())
                 .nombre(usuario.getNombre())
                 .correo(usuario.getCorreo())
-                .rol(usuario.getRol().name())
+                .rol(usuario.getRol() != null ? usuario.getRol().name() : null)
                 .activo(usuario.getActivo())
                 .fechaRegistro(usuario.getFechaRegistro())
                 .telefono(perfil != null ? perfil.getTelefono() : null)

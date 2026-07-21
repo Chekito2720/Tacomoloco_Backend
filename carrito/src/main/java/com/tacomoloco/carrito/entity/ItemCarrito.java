@@ -29,13 +29,13 @@ public class ItemCarrito {
     @Column(name = "producto_id", nullable = false)
     private Long productoId;
 
-    @Column(nullable = false)
+    @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
     @Column(name = "precio_unitario", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioUnitario;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "subtotal", nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
 
     @Column(name = "nombre_producto", nullable = false)

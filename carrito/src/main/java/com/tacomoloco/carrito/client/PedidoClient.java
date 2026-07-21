@@ -9,6 +9,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(name = "pedidos", url = "${pedidos.service.url:http://localhost:8085}")
 public interface PedidoClient {
 
-    @PostMapping("/api/pedidos/checkout")
+    @PostMapping("/pedidos/checkout")
     PedidoCheckoutResponseDTO checkout(@RequestBody PedidoCheckoutRequestDTO request);
 }

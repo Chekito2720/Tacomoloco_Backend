@@ -21,16 +21,16 @@ public class Notificacion {
     @JoinColumn(name = "pedido_id", nullable = false)
     private Pedido pedido;
 
-    @Column(nullable = false)
+    @Column(name = "cliente_id", nullable = false)
     private Long clienteId;
 
-    @Column(nullable = false)
+    @Column(name = "mensaje", nullable = false)
     private String mensaje;
 
-    @Column(nullable = false)
+    @Column(name = "fecha_envio", nullable = false)
     private LocalDateTime fechaEnvio;
 
-    @Column(nullable = false)
+    @Column(name = "leido", nullable = false)
     private Boolean leido;
 
     @PrePersist

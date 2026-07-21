@@ -18,20 +18,22 @@ public class Producto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "nombre", nullable = false)
     private String nombre;
 
+    @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "precio", nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
 
+    @Column(name = "imagen_url")
     private String imagenUrl;
 
-    @Column(nullable = false)
+    @Column(name = "disponible", nullable = false)
     private Boolean disponible;
 
-    @Column(nullable = false)
+    @Column(name = "categoria", nullable = false)
     private String categoria;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

@@ -22,21 +22,21 @@ public class Pago {
     @JoinColumn(name = "pedido_id", nullable = false)
     private Pedido pedido;
 
-    @Column(nullable = false)
+    @Column(name = "metodo", nullable = false)
     private String metodo;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "monto", nullable = false, precision = 10, scale = 2)
     private BigDecimal monto;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "estado", nullable = false)
     private EstadoPago estado;
 
-    @Column(nullable = false)
+    @Column(name = "fecha", nullable = false)
     private LocalDateTime fecha;
 
     public enum EstadoPago {
-        SIMULADO_EXITOSO, SIMULADO_FALLIDO
+        PENDIENTE, COMPLETADO, CANCELADO
     }
 
     @PrePersist

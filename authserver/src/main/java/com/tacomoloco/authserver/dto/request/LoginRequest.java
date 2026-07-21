@@ -1,5 +1,6 @@
 package com.tacomoloco.authserver.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +12,8 @@ import lombok.NoArgsConstructor;
 public class LoginRequest {
 
     @NotBlank
-    private String username;
+    @Email
+    private String email;
 
     @NotBlank
     private String password;

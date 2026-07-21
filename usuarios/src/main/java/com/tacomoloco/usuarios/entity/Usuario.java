@@ -17,27 +17,27 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "nombre", nullable = false)
     private String nombre;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "correo", nullable = false, unique = true)
     private String correo;
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "rol", nullable = false)
     private RolUsuario rol;
 
-    @Column(nullable = false)
+    @Column(name = "activo", nullable = false)
     private Boolean activo;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "fecha_registro", nullable = false, updatable = false)
     private LocalDateTime fechaRegistro;
 
     public enum RolUsuario {
-        ADMINISTRADOR, CLIENTE, GERENTE
+        ADMIN, CLIENTE, GERENTE, ADMINISTRADOR
     }
 
     @PrePersist

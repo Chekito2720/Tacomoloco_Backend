@@ -11,9 +11,9 @@ import java.util.List;
 @FeignClient(name = "catalogo", url = "${catalogo.service.url:http://localhost:8084}")
 public interface CatalogoClient {
 
-    @GetMapping("/api/productos/{id}")
+    @GetMapping("/catalogo/{id}")
     ProductoDTO getProductoById(@PathVariable Long id);
 
-    @GetMapping("/api/productos/{id}/ingredientes")
+    @GetMapping("/catalogo/{id}/ingredientes")
     List<IngredienteCatalogoDTO> getIngredientesByProductoId(@PathVariable Long id);
 }

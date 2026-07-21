@@ -62,6 +62,7 @@ public class CarritoService {
         item.setPrecioUnitario(producto.getPrecio());
         item.setNombreProducto(producto.getNombre());
         item.setImagenUrl(producto.getImagenUrl());
+        item.setSubtotal(producto.getPrecio().multiply(BigDecimal.valueOf(request.getCantidad())));
         item = itemCarritoRepository.save(item);
 
         if (request.getPersonalizaciones() != null && !request.getPersonalizaciones().isEmpty()) {
@@ -340,7 +341,11 @@ public class CarritoService {
 
     private Carrito obtenerCarritoActivo(Long clienteId) {
         return carritoRepository.findByClienteIdAndActivoTrue(clienteId)
-                .orElseThrow(() -> new EntityNotFoundException("No hay carrito activo para el cliente: " + clienteId));
+                .orElseGet(() -> {
+                    Carrito nuevo = new Carrito();
+                    nuevo.setClienteId(clienteId);
+                    return carritoRepository.save(nuevo);
+                });
     }
 
     private CarritoResponseDTO convertirADTO(Carrito carrito) {

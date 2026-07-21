@@ -24,6 +24,6 @@ public class ProductoIngrediente {
     @Column(name = "ingrediente_id", nullable = false)
     private Long ingredienteId;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "cantidad_requerida", nullable = false, precision = 10, scale = 2)
     private BigDecimal cantidadRequerida;
 }

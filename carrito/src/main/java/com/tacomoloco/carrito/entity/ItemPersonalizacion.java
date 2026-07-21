@@ -25,7 +25,7 @@ public class ItemPersonalizacion {
     private Long ingredienteId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "tipo", nullable = false)
     private TipoPersonalizacion tipo;
 
     @Column(name = "costo_extra", nullable = false, precision = 10, scale = 2)

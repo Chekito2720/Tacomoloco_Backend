@@ -30,7 +30,7 @@ public class ReporteService {
     private final VentaResumenRepository ventaResumenRepository;
     private final ReporteGeneradoRepository reporteGeneradoRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ReporteComprasDTO generarReporteComprasMensual(int year, int month, Long usuarioId) {
         LocalDateTime inicio = LocalDate.of(year, month, 1).atStartOfDay();
         LocalDateTime fin = inicio.plusMonths(1).minusNanos(1);
@@ -84,7 +84,7 @@ public class ReporteService {
         return reporte;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ReporteInventarioDTO generarReporteInventario(Long usuarioId) {
         List<IngredienteDTO> ingredientes = inventarioClient.getAllIngredientes();
 
@@ -205,6 +205,7 @@ public class ReporteService {
         }
     }
 
+    @Transactional
     private void guardarRegistroReporte(Long usuarioId, ReporteGenerado.TipoReporte tipo, String parametros) {
         ReporteGenerado registro = new ReporteGenerado();
         registro.setTipo(tipo);

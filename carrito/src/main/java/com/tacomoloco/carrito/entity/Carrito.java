@@ -28,7 +28,7 @@ public class Carrito {
     @Column(name = "fecha_actualizacion", nullable = false)
     private LocalDateTime fechaActualizacion;
 
-    @Column(nullable = false)
+    @Column(name = "activo", nullable = false)
     private Boolean activo;
 
     @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

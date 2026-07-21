@@ -25,10 +25,10 @@ public class PersonalizacionIngrediente {
     private Long ingredienteId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "tipo", nullable = false)
     private TipoPersonalizacion tipo;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "costo_extra", nullable = false, precision = 10, scale = 2)
     private BigDecimal costoExtra;
 
     @Column(name = "nombre_ingrediente")

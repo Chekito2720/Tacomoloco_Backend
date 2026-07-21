@@ -18,16 +18,16 @@ public class ReporteGenerado {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "tipo", nullable = false)
     private TipoReporte tipo;
 
-    @Column(nullable = false)
+    @Column(name = "fecha_generacion", nullable = false)
     private LocalDateTime fechaGeneracion;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "parametros", columnDefinition = "TEXT")
     private String parametros;
 
-    @Column(nullable = false)
+    @Column(name = "generado_por", nullable = false)
     private Long generadoPor;
 
     public enum TipoReporte {

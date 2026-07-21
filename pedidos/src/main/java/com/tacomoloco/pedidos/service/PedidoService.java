@@ -94,7 +94,7 @@ public class PedidoService {
         pago.setPedido(pedido);
         pago.setMetodo(metodo);
         pago.setMonto(pedido.getTotal());
-        pago.setEstado(Pago.EstadoPago.SIMULADO_EXITOSO);
+        pago.setEstado(Pago.EstadoPago.COMPLETADO);
         return pagoRepository.save(pago);
     }
 
@@ -292,8 +292,9 @@ public class PedidoService {
 
     private String mensajeEstadoPago(Pago.EstadoPago estado) {
         return switch (estado) {
-            case SIMULADO_EXITOSO -> "Pago simulado exitosamente. En el futuro se conectara con un sistema de pago real.";
-            case SIMULADO_FALLIDO -> "El pago simulado ha fallado. Intentalo de nuevo.";
+            case COMPLETADO -> "Pago completado exitosamente.";
+            case PENDIENTE -> "Pago pendiente de procesar.";
+            case CANCELADO -> "Pago cancelado.";
         };
     }
 

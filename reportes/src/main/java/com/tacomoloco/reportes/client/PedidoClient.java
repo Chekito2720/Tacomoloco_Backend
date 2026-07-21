@@ -12,11 +12,11 @@ import java.util.List;
 @FeignClient(name = "pedidos", url = "${pedidos.service.url:http://localhost:8085}")
 public interface PedidoClient {
 
-    @GetMapping("/api/pedidos")
+    @GetMapping("/pedidos")
     List<PedidoDTO> getPedidosByFechaBetween(
             @RequestParam("inicio") LocalDateTime inicio,
             @RequestParam("fin") LocalDateTime fin);
 
-    @GetMapping("/api/pedidos/{id}")
+    @GetMapping("/pedidos/{id}")
     PedidoDTO getPedidoById(@PathVariable Long id);
 }

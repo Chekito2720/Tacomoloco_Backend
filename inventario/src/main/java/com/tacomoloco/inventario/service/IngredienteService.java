@@ -4,12 +4,14 @@ import com.tacomoloco.inventario.entity.Ingrediente;
 import com.tacomoloco.inventario.repository.IngredienteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class IngredienteService {
 
     private final IngredienteRepository ingredienteRepository;
@@ -22,14 +24,17 @@ public class IngredienteService {
         return ingredienteRepository.save(ingrediente);
     }
 
+    @Transactional(readOnly = true)
     public Optional<Ingrediente> obtenerPorId(Long id) {
         return ingredienteRepository.findById(id);
     }
 
+    @Transactional(readOnly = true)
     public List<Ingrediente> listarTodos() {
         return ingredienteRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public List<Ingrediente> listarPorEstado(Ingrediente.EstadoIngrediente estado) {
         return ingredienteRepository.findByEstado(estado);
     }

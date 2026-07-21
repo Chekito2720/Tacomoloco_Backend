@@ -18,29 +18,53 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String username;
+    @Column(name = "nombre", nullable = false)
+    private String nombre;
 
-    @Column(nullable = false)
-    private String password;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @Column(name = "correo", nullable = false, unique = true)
+    private String correo;
 
-    @Column(nullable = false)
-    private String role;
+    @Column(name = "rol", nullable = false)
+    private String rol;
 
-    @Column(nullable = false)
-    private Boolean enabled;
+    @Column(name = "activo", nullable = false)
+    private Boolean activo;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "fecha_registro", nullable = false, updatable = false)
+    private LocalDateTime fechaRegistro;
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        if (this.enabled == null) {
-            this.enabled = true;
+        this.fechaRegistro = LocalDateTime.now();
+        if (this.activo == null) {
+            this.activo = true;
         }
+    }
+
+    public String getUsername() {
+        return nombre;
+    }
+
+    public String getPassword() {
+        return passwordHash;
+    }
+
+    public String getEmail() {
+        return correo;
+    }
+
+    public String getRole() {
+        return rol;
+    }
+
+    public Boolean getEnabled() {
+        return activo;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return fechaRegistro;
     }
 }

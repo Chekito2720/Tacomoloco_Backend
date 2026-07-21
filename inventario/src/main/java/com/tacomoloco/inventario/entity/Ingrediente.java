@@ -17,30 +17,36 @@ public class Ingrediente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "nombre", nullable = false)
     private String nombre;
 
-    @Column(nullable = false)
+    @Column(name = "unidad_medida", nullable = false)
     private String unidadMedida;
 
-    @Column(nullable = false)
+    @Column(name = "cantidad_disponible", nullable = false)
     private Double cantidadDisponible;
 
     @Column(name = "stock_minimo", nullable = false)
     private Double stockMinimo = 10.0;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "estado", nullable = false)
     private EstadoIngrediente estado;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "costo_unitario", nullable = false, precision = 10, scale = 2)
     private BigDecimal costoUnitario;
 
     public enum EstadoIngrediente {
-        DISPONIBLE, AGOTADO
+        DISPONIBLE, STOCK_BAJO, AGOTADO
     }
 
     public void actualizarEstado() {
-        this.estado = this.cantidadDisponible <= this.stockMinimo ? EstadoIngrediente.AGOTADO : EstadoIngrediente.DISPONIBLE;
+        if (this.cantidadDisponible <= 0) {
+            this.estado = EstadoIngrediente.AGOTADO;
+        } else if (this.cantidadDisponible <= this.stockMinimo) {
+            this.estado = EstadoIngrediente.STOCK_BAJO;
+        } else {
+            this.estado = EstadoIngrediente.DISPONIBLE;
+        }
     }
 }

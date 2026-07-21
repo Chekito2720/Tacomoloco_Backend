@@ -19,12 +19,12 @@ public class GrupoPedido {
     @JoinColumn(name = "carrito_id", nullable = false)
     private Carrito carrito;
 
-    @Column
+    @Column(name = "nombre")
     private String nombre;
 
-    @Column
+    @Column(name = "nota")
     private String nota;
 
-    @Column(nullable = false)
+    @Column(name = "orden", nullable = false)
     private Integer orden;
 }

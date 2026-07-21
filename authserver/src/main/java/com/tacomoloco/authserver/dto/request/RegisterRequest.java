@@ -13,8 +13,8 @@ import lombok.NoArgsConstructor;
 public class RegisterRequest {
 
     @NotBlank
-    @Size(min = 3, max = 50)
-    private String username;
+    @Size(min = 2, max = 100)
+    private String nombre;
 
     @NotBlank
     @Size(min = 6, max = 100)
@@ -22,7 +22,7 @@ public class RegisterRequest {
 
     @NotBlank
     @Email
-    private String email;
+    private String correo;
 
-    private String role;
+    private String rol;
 }

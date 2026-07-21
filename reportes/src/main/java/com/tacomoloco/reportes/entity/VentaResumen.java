@@ -18,15 +18,15 @@ public class VentaResumen {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "fecha", nullable = false)
     private LocalDate fecha;
 
     @Column(name = "producto_id", nullable = false)
     private Long productoId;
 
-    @Column(nullable = false)
+    @Column(name = "cantidad_vendida", nullable = false)
     private Integer cantidadVendida;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "total_venta", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalVenta;
 }

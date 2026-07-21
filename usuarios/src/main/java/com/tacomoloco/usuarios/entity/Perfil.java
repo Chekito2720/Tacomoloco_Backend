@@ -23,5 +23,6 @@ public class Perfil {
 
     private String direccion;
 
+    @Column(name = "foto_url")
     private String fotoUrl;
 }

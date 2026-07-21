@@ -85,14 +85,14 @@ public class PagoService {
                 .orElseThrow(() -> new RuntimeException("Pedido no encontrado con ID: " + pedidoId));
 
         Optional<Pago> existente = pagoRepository.findByPedidoId(pedidoId);
-        if (existente.isPresent() && existente.get().getEstado() == Pago.EstadoPago.SIMULADO_EXITOSO) {
+        if (existente.isPresent() && existente.get().getEstado() == Pago.EstadoPago.COMPLETADO) {
             return convertirADTO(existente.get());
         }
 
         Pago pago = simularPagoExitoso(pedido, metodo != null ? metodo : "TACOMOLOCO_SIMULADO");
 
         pedidoService.crearNotificacion(pedido,
-                "Pago simulado exitosamente para tu pedido #" + pedido.getId() + ". Total: $" + pago.getMonto());
+                "Pago completado para tu pedido #" + pedido.getId() + ". Total: $" + pago.getMonto());
 
         return convertirADTO(pago);
     }
@@ -109,7 +109,7 @@ public class PagoService {
         pago.setPedido(pedido);
         pago.setMetodo(metodo);
         pago.setMonto(pedido.getTotal());
-        pago.setEstado(Pago.EstadoPago.SIMULADO_EXITOSO);
+        pago.setEstado(Pago.EstadoPago.COMPLETADO);
         return pagoRepository.save(pago);
     }
 
@@ -127,8 +127,9 @@ public class PagoService {
 
     private String mensajeEstadoPago(Pago.EstadoPago estado) {
         return switch (estado) {
-            case SIMULADO_EXITOSO -> "Pago simulado exitosamente. En el futuro se conectara con un sistema de pago real.";
-            case SIMULADO_FALLIDO -> "El pago simulado ha fallado. Intentalo de nuevo.";
+            case COMPLETADO -> "Pago completado exitosamente.";
+            case PENDIENTE -> "Pago pendiente de procesar.";
+            case CANCELADO -> "Pago cancelado.";
         };
     }
 }

@@ -24,19 +24,16 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            return ResponseEntity.badRequest().body("Username already taken");
-        }
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByCorreo(request.getCorreo())) {
             return ResponseEntity.badRequest().body("Email already registered");
         }
 
         User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setEmail(request.getEmail());
-        user.setRole(request.getRole() != null ? request.getRole() : "CLIENTE");
-        user.setEnabled(true);
+        user.setNombre(request.getNombre());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setCorreo(request.getCorreo());
+        user.setRol(request.getRol() != null ? request.getRol() : "CLIENTE");
+        user.setActivo(true);
 
         userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
@@ -44,15 +41,15 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
+        User user = userRepository.findByCorreo(request.getEmail())
                 .orElse(null);
 
-        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String token = tokenService.generateToken(user.getUsername(), "read write", user.getRole());
-        LoginResponse response = new LoginResponse(token, "Bearer", 3600, "read write", user.getRole());
+        String token = tokenService.generateToken(user.getCorreo(), "read write", user.getRol());
+        LoginResponse response = new LoginResponse(token, "Bearer", 3600, "read write", user.getRol());
         return ResponseEntity.ok(response);
     }
 }
