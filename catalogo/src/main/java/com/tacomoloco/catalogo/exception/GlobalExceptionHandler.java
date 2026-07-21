@@ -1,4 +1,4 @@
-package com.tacomoloco.usuarios.exception;
+package com.tacomoloco.catalogo.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;

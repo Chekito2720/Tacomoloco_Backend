@@ -138,7 +138,7 @@ public class CarritoService {
             throw new IllegalArgumentException("La personalizacion no pertenece al carrito del cliente");
         }
 
-        itemPersonalizacionRepository.delete(pers);
+        itemPersonalizacionRepository.deleteById(personalizacionId);
 
         item.setSubtotal(item.calcularSubtotalConExtras());
         itemCarritoRepository.save(item);

@@ -1,5 +1,6 @@
 package com.tacomoloco.carrito.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class ItemPersonalizacion {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_carrito_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private ItemCarrito itemCarrito;
 
     @Column(name = "ingrediente_id", nullable = false)

@@ -46,14 +46,14 @@ public class ReporteService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Map<Long, Integer> productoCantidad = entregados.stream()
-                .flatMap(p -> p.getDetalles().stream())
+                .flatMap(p -> nullSafeDetalles(p).stream())
                 .collect(Collectors.groupingBy(
                         DetallePedidoDTO::getProductoId,
                         Collectors.summingInt(DetallePedidoDTO::getCantidad)
                 ));
 
         Map<Long, BigDecimal> productoTotal = entregados.stream()
-                .flatMap(p -> p.getDetalles().stream())
+                .flatMap(p -> nullSafeDetalles(p).stream())
                 .collect(Collectors.groupingBy(
                         DetallePedidoDTO::getProductoId,
                         Collectors.reducing(BigDecimal.ZERO, DetallePedidoDTO::getSubtotal, BigDecimal::add)
@@ -137,14 +137,14 @@ public class ReporteService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Map<Long, Integer> productoCantidad = entregados.stream()
-                .flatMap(p -> p.getDetalles().stream())
+                .flatMap(p -> nullSafeDetalles(p).stream())
                 .collect(Collectors.groupingBy(
                         DetallePedidoDTO::getProductoId,
                         Collectors.summingInt(DetallePedidoDTO::getCantidad)
                 ));
 
         Map<Long, BigDecimal> productoTotal = entregados.stream()
-                .flatMap(p -> p.getDetalles().stream())
+                .flatMap(p -> nullSafeDetalles(p).stream())
                 .collect(Collectors.groupingBy(
                         DetallePedidoDTO::getProductoId,
                         Collectors.reducing(BigDecimal.ZERO, DetallePedidoDTO::getSubtotal, BigDecimal::add)
@@ -184,6 +184,10 @@ public class ReporteService {
                 .totalPedidos(entregados.size())
                 .topProductos(topProductos)
                 .build();
+    }
+
+    private java.util.List<DetallePedidoDTO> nullSafeDetalles(PedidoDTO p) {
+        return p.getDetalles() != null ? p.getDetalles() : java.util.List.of();
     }
 
     private String obtenerNombreProducto(Long productoId) {
