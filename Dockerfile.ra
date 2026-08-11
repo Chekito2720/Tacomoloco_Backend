@@ -23,9 +23,9 @@ COPY --from=build /workspace/carrito/target/*.jar ./carrito/
 COPY --from=build /workspace/reportes/target/*.jar ./reportes/
 COPY --from=build /workspace/api-gateway/target/*.jar ./api-gateway/
 COPY --from=build /workspace/start.sh .
-RUN chmod +x start.sh
+RUN chmod +x start.sh && ls -la start.sh
 
 # El gateway expone 8080; el resto son internos
 EXPOSE 8080 9000 8761 8081 8082 8083 8084 8085 8086
 
-ENTRYPOINT ["./start.sh"]
+ENTRYPOINT ["/workspace/start.sh"]
