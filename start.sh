@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-echo "[Railway] Iniciando Tacomoloco (monoservicio con docker-compose interno)"
+echo "[Railway] Iniciando Tacomoloco (monoservicio)"
 
 # Lanzamos servicios en orden con delays
 java -jar /workspace/eureka/target/eureka-0.0.1-SNAPSHOT.jar > /dev/stdout 2>&1 &
