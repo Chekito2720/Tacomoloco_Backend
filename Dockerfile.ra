@@ -13,6 +13,7 @@ RUN for svc in eureka authserver usuarios inventario catalogo pedidos carrito re
 # Imagen final ligera con JRE y todos los JARs
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /workspace
+WORKDIR /workspace
 COPY --from=build /workspace/eureka/target/*.jar ./eureka/
 COPY --from=build /workspace/authserver/target/*.jar ./authserver/
 COPY --from=build /workspace/usuarios/target/*.jar ./usuarios/
