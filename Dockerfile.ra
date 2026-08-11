@@ -3,11 +3,11 @@ FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
 COPY . .
 RUN chmod +x start.sh && ./start.sh --help 2>/dev/null || true
-
+RUN chmod +x mvnw mvnw.cmd || true
 # Compilar todos los servicios
 RUN for svc in eureka authserver usuarios inventario catalogo pedidos carrito reportes api-gateway; do \
       echo "Building $svc"; \
-      (cd $svc && ./mvnw clean package -DskipTests) || true; \
+      (cd $svc && chmod +x mvnw mvnw.cmd 2>/dev/null || true && ./mvnw clean package -DskipTests) || true; \
     done
 
 # Imagen final ligera con JRE y todos los JARs
