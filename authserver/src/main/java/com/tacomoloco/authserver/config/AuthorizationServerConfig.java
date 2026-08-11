@@ -7,7 +7,6 @@ import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -35,11 +34,11 @@ public class AuthorizationServerConfig {
     @Value("${oauth2.client.secret:secret}")
     private String clientSecret;
 
-    @Value("classpath:keys/public.pem")
-    private Resource publicKeyResource;
+    @Value("${RSA_PUBLIC_KEY:}")
+    private String rsaPublicKeyBase64;
 
-    @Value("classpath:keys/private.pem")
-    private Resource privateKeyResource;
+    @Value("${RSA_PRIVATE_KEY:}")
+    private String rsaPrivateKeyBase64;
 
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
@@ -58,7 +57,6 @@ public class AuthorizationServerConfig {
                 .scope("write")
                 .clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())
                 .build();
-
         return new InMemoryRegisteredClientRepository(gatewayClient);
     }
 
@@ -75,7 +73,10 @@ public class AuthorizationServerConfig {
     }
 
     private RSAPublicKey loadPublicKey() throws Exception {
-        String content = new String(publicKeyResource.getInputStream().readAllBytes());
+        String content = rsaPublicKeyBase64;
+        if (content == null || content.isEmpty()) {
+            throw new IllegalStateException("RSA_PUBLIC_KEY env var is not set");
+        }
         content = content.replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
                 .replaceAll("\\s", "");
@@ -85,7 +86,10 @@ public class AuthorizationServerConfig {
     }
 
     private RSAPrivateKey loadPrivateKey() throws Exception {
-        String content = new String(privateKeyResource.getInputStream().readAllBytes());
+        String content = rsaPrivateKeyBase64;
+        if (content == null || content.isEmpty()) {
+            throw new IllegalStateException("RSA_PRIVATE_KEY env var is not set");
+        }
         content = content.replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
                 .replaceAll("\\s", "");
@@ -106,8 +110,9 @@ public class AuthorizationServerConfig {
 
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
+        String issuer = System.getenv().getOrDefault("OAUTH2_ISSUER_URI", "http://localhost:9000");
         return AuthorizationServerSettings.builder()
-                .issuer("http://localhost:9000")
+                .issuer(issuer)
                 .build();
     }
 }

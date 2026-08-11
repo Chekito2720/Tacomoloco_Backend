@@ -11,7 +11,6 @@ import com.tacomoloco.reportes.repository.VentaResumenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,12 +29,11 @@ public class ReporteService {
     private final VentaResumenRepository ventaResumenRepository;
     private final ReporteGeneradoRepository reporteGeneradoRepository;
 
-    @Transactional
     public ReporteComprasDTO generarReporteComprasMensual(int year, int month, Long usuarioId) {
         LocalDateTime inicio = LocalDate.of(year, month, 1).atStartOfDay();
         LocalDateTime fin = inicio.plusMonths(1).minusNanos(1);
 
-        List<PedidoDTO> pedidos = pedidoClient.getPedidosByFechaBetween(inicio, fin);
+        List<PedidoDTO> pedidos = obtenerPedidosSeguro(inicio, fin);
 
         List<PedidoDTO> entregados = pedidos.stream()
                 .filter(p -> "ENTREGADO".equals(p.getEstado()))
@@ -59,11 +57,13 @@ public class ReporteService {
                         Collectors.reducing(BigDecimal.ZERO, DetallePedidoDTO::getSubtotal, BigDecimal::add)
                 ));
 
+        Map<Long, ProductoCatalogoDTO> cacheCatalogo = new HashMap<>();
+
         List<ReporteComprasDTO.ResumenProductoDTO> productosMasVendidos = productoCantidad.entrySet().stream()
                 .map(e -> {
                     ReporteComprasDTO.ResumenProductoDTO dto = new ReporteComprasDTO.ResumenProductoDTO();
                     dto.setProductoId(e.getKey());
-                    dto.setProductoNombre(obtenerNombreProducto(e.getKey()));
+                    dto.setProductoNombre(obtenerNombreProducto(e.getKey(), cacheCatalogo));
                     dto.setCantidadTotal(e.getValue());
                     dto.setTotalVendido(productoTotal.getOrDefault(e.getKey(), BigDecimal.ZERO));
                     return dto;
@@ -84,9 +84,15 @@ public class ReporteService {
         return reporte;
     }
 
-    @Transactional
     public ReporteInventarioDTO generarReporteInventario(Long usuarioId) {
-        List<IngredienteDTO> ingredientes = inventarioClient.getAllIngredientes();
+        List<IngredienteDTO> ingredientes;
+        try {
+            ingredientes = inventarioClient.getAllIngredientes();
+            if (ingredientes == null) ingredientes = List.of();
+        } catch (Exception e) {
+            log.warn("No se pudo obtener inventario: {}", e.getMessage());
+            ingredientes = List.of();
+        }
 
         List<ReporteInventarioDTO.IngredienteStockDTO> detalle = ingredientes.stream().map(ing -> {
             ReporteInventarioDTO.IngredienteStockDTO dto = new ReporteInventarioDTO.IngredienteStockDTO();
@@ -97,7 +103,9 @@ public class ReporteService {
             dto.setStockMinimo(ing.getStockMinimo());
             dto.setEstado(ing.getEstado());
             dto.setCostoUnitario(ing.getCostoUnitario());
-            dto.setValorTotal(ing.getCostoUnitario().multiply(BigDecimal.valueOf(ing.getCantidadDisponible())));
+            BigDecimal costo = ing.getCostoUnitario() != null ? ing.getCostoUnitario() : BigDecimal.ZERO;
+            double cant = ing.getCantidadDisponible() != null ? ing.getCantidadDisponible() : 0d;
+            dto.setValorTotal(costo.multiply(BigDecimal.valueOf(cant)));
             dto.setAlertaStockBajo("STOCK_BAJO".equals(ing.getEstado()) || "AGOTADO".equals(ing.getEstado()));
             return dto;
         }).collect(Collectors.toList());
@@ -121,12 +129,11 @@ public class ReporteService {
         return reporte;
     }
 
-    @Transactional
     public ReporteVentasDTO generarTopProductos(int year, int month, Long usuarioId) {
         LocalDateTime inicio = LocalDate.of(year, month, 1).atStartOfDay();
         LocalDateTime fin = inicio.plusMonths(1).minusNanos(1);
 
-        List<PedidoDTO> pedidos = pedidoClient.getPedidosByFechaBetween(inicio, fin);
+        List<PedidoDTO> pedidos = obtenerPedidosSeguro(inicio, fin);
 
         List<PedidoDTO> entregados = pedidos.stream()
                 .filter(p -> "ENTREGADO".equals(p.getEstado()))
@@ -151,19 +158,24 @@ public class ReporteService {
                 ));
 
         int[] posicion = {1};
+        Map<Long, ProductoCatalogoDTO> cacheCatalogo = new HashMap<>();
         List<ReporteVentasDTO.ProductoTopDTO> topProductos = productoCantidad.entrySet().stream()
                 .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed())
                 .limit(5)
                 .map(e -> {
-                    String nombre = obtenerNombreProducto(e.getKey());
-                    String categoria = obtenerCategoriaProducto(e.getKey());
+                    String nombre = obtenerNombreProducto(e.getKey(), cacheCatalogo);
+                    String categoria = obtenerCategoriaProducto(e.getKey(), cacheCatalogo);
 
-                    VentaResumen venta = new VentaResumen();
-                    venta.setFecha(inicio.toLocalDate());
-                    venta.setProductoId(e.getKey());
-                    venta.setCantidadVendida(e.getValue());
-                    venta.setTotalVenta(productoTotal.getOrDefault(e.getKey(), BigDecimal.ZERO));
-                    ventaResumenRepository.save(venta);
+                    try {
+                        VentaResumen venta = new VentaResumen();
+                        venta.setFecha(inicio.toLocalDate());
+                        venta.setProductoId(e.getKey());
+                        venta.setCantidadVendida(e.getValue());
+                        venta.setTotalVenta(productoTotal.getOrDefault(e.getKey(), BigDecimal.ZERO));
+                        ventaResumenRepository.save(venta);
+                    } catch (Exception ex) {
+                        log.warn("No se pudo guardar VentaResumen para producto {}: {}", e.getKey(), ex.getMessage());
+                    }
 
                     return ReporteVentasDTO.ProductoTopDTO.builder()
                             .productoId(e.getKey())
@@ -190,31 +202,50 @@ public class ReporteService {
         return p.getDetalles() != null ? p.getDetalles() : java.util.List.of();
     }
 
-    private String obtenerNombreProducto(Long productoId) {
+    private List<PedidoDTO> obtenerPedidosSeguro(LocalDateTime inicio, LocalDateTime fin) {
         try {
-            ProductoCatalogoDTO producto = catalogoClient.getProductoById(productoId);
-            return producto != null ? producto.getNombre() : "Producto " + productoId;
+            String inicioIso = inicio != null ? inicio.toString() : null;
+            String finIso = fin != null ? fin.toString() : null;
+            log.info("[reportes] Llamando a pedidos: inicio={} fin={}", inicioIso, finIso);
+            List<PedidoDTO> pedidos = pedidoClient.getPedidosByFechaBetween(inicioIso, finIso);
+            int count = pedidos != null ? pedidos.size() : 0;
+            int entregados = pedidos != null ? (int) pedidos.stream().filter(p -> "ENTREGADO".equals(p.getEstado())).count() : 0;
+            log.info("[reportes] Pedidos recibidos: total={} entregados={}", count, entregados);
+            return pedidos != null ? pedidos : List.of();
+        } catch (Exception e) {
+            log.warn("[reportes] No se pudo obtener pedidos entre {} y {}: {}", inicio, fin, e.getMessage());
+            return List.of();
+        }
+    }
+
+    private String obtenerNombreProducto(Long productoId, Map<Long, ProductoCatalogoDTO> cache) {
+        ProductoCatalogoDTO producto = cache.computeIfAbsent(productoId, this::fetchProductoSeguro);
+        return producto != null && producto.getNombre() != null ? producto.getNombre() : "Producto " + productoId;
+    }
+
+    private String obtenerCategoriaProducto(Long productoId, Map<Long, ProductoCatalogoDTO> cache) {
+        ProductoCatalogoDTO producto = cache.computeIfAbsent(productoId, this::fetchProductoSeguro);
+        return producto != null && producto.getCategoria() != null ? producto.getCategoria() : "N/A";
+    }
+
+    private ProductoCatalogoDTO fetchProductoSeguro(Long productoId) {
+        try {
+            return catalogoClient.getProductoById(productoId);
         } catch (Exception e) {
             log.warn("No se pudo obtener el producto {} del catalogo: {}", productoId, e.getMessage());
-            return "Producto " + productoId;
+            return null;
         }
     }
 
-    private String obtenerCategoriaProducto(Long productoId) {
-        try {
-            ProductoCatalogoDTO producto = catalogoClient.getProductoById(productoId);
-            return producto != null ? producto.getCategoria() : "N/A";
-        } catch (Exception e) {
-            return "N/A";
-        }
-    }
-
-    @Transactional
     private void guardarRegistroReporte(Long usuarioId, ReporteGenerado.TipoReporte tipo, String parametros) {
-        ReporteGenerado registro = new ReporteGenerado();
-        registro.setTipo(tipo);
-        registro.setParametros(parametros);
-        registro.setGeneradoPor(usuarioId);
-        reporteGeneradoRepository.save(registro);
+        try {
+            ReporteGenerado registro = new ReporteGenerado();
+            registro.setTipo(tipo);
+            registro.setParametros(parametros);
+            registro.setGeneradoPor(usuarioId);
+            reporteGeneradoRepository.save(registro);
+        } catch (Exception e) {
+            log.warn("No se pudo guardar el registro de reporte: {}", e.getMessage());
+        }
     }
 }

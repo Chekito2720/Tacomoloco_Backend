@@ -1,24 +1,250 @@
+name: tacomoloco
+
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: tacomoloco-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      # Crea las 7 BD (una por microservicio) al arrancar el contenedor
-      POSTGRES_MULTIPLE_DATABASES: db_authserver,db_carrito,db_catalogo,db_inventario,db_pedidos,db_reportes,db_usuarios
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_MULTIPLE_DATABASES: db_authserver,db_usuarios,db_inventario,db_reportes,db_catalogo,db_pedidos,db_carrito
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d db_authserver"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d db_usuarios"]
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - tacomoloco-net
+
+  eureka:
+    build: ./eureka
+    container_name: tacomoloco-eureka
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8761:8761"
+    networks:
+      - tacomoloco-net
+
+  authserver:
+    build: ./authserver
+    container_name: tacomoloco-authserver
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/db_authserver
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EUREKA_HOST: eureka
+      USUARIOS_SERVICE_URL: http://usuarios:8081
+    ports:
+      - "9000:9000"
+    networks:
+      - tacomoloco-net
+
+  usuarios:
+    build: ./usuarios
+    container_name: tacomoloco-usuarios
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+      authserver:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/db_usuarios
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EUREKA_HOST: eureka
+      OAUTH2_ISSUER_URI: http://authserver:9000
+    ports:
+      - "8081:8081"
+    networks:
+      - tacomoloco-net
+
+  inventario:
+    build: ./inventario
+    container_name: tacomoloco-inventario
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+      authserver:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/db_inventario
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EUREKA_HOST: eureka
+      OAUTH2_ISSUER_URI: http://authserver:9000
+    ports:
+      - "8082:8082"
+    networks:
+      - tacomoloco-net
+
+  reportes:
+    build: ./reportes
+    container_name: tacomoloco-reportes
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+      authserver:
+        condition: service_started
+      pedidos:
+        condition: service_started
+      inventario:
+        condition: service_started
+      catalogo:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/db_reportes
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EUREKA_HOST: eureka
+      OAUTH2_ISSUER_URI: http://authserver:9000
+      PEDIDOS_SERVICE_URL: http://pedidos:8085
+      INVENTARIO_SERVICE_URL: http://inventario:8082
+      CATALOGO_SERVICE_URL: http://catalogo:8084
+    ports:
+      - "8083:8083"
+    networks:
+      - tacomoloco-net
+
+  catalogo:
+    build: ./catalogo
+    container_name: tacomoloco-catalogo
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+      authserver:
+        condition: service_started
+      inventario:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/db_catalogo
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EUREKA_HOST: eureka
+      OAUTH2_ISSUER_URI: http://authserver:9000
+      INVENTARIO_SERVICE_URL: http://inventario:8082
+    ports:
+      - "8084:8084"
+    networks:
+      - tacomoloco-net
+
+  pedidos:
+    build: ./pedidos
+    container_name: tacomoloco-pedidos
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+      authserver:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/db_pedidos
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EUREKA_HOST: eureka
+      OAUTH2_ISSUER_URI: http://authserver:9000
+    ports:
+      - "8085:8085"
+    networks:
+      - tacomoloco-net
+
+  carrito:
+    build: ./carrito
+    container_name: tacomoloco-carrito
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+      authserver:
+        condition: service_started
+      catalogo:
+        condition: service_started
+      pedidos:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/db_carrito
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EUREKA_HOST: eureka
+      OAUTH2_ISSUER_URI: http://authserver:9000
+      CATALOGO_SERVICE_URL: http://catalogo:8084
+      PEDIDOS_SERVICE_URL: http://pedidos:8085
+    ports:
+      - "8086:8086"
+    networks:
+      - tacomoloco-net
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: tacomoloco-gateway
+    restart: unless-stopped
+    depends_on:
+      eureka:
+        condition: service_started
+      authserver:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_HOST: eureka
+      OAUTH2_ISSUER_URI: http://authserver:9000
+    ports:
+      - "8080:8080"
+    networks:
+      - tacomoloco-net
+
+  frontend:
+    build:
+      context: ../tacomoloco_front
+    container_name: tacomoloco-frontend
+    restart: unless-stopped
+    depends_on:
+      api-gateway:
+        condition: service_started
+    ports:
+      - "4200:80"
+    networks:
+      - tacomoloco-net
+
+networks:
+  tacomoloco-net:
+    driver: bridge
 
 volumes:
   postgres_data:
-    name: tacomoloco_postgres_data
+    driver: local
