@@ -1,0 +1,31 @@
+# Multi-stage build para Railway (monoservicio que lanza todo con start.sh)
+FROM eclipse-temurin:21-jdk-alpine AS build
+WORKDIR /workspace
+COPY . .
+RUN chmod +x start.sh && ./start.sh --help 2>/dev/null || true
+
+# Compilar todos los servicios
+RUN for svc in eureka authserver usuarios inventario catalogo pedidos carrito reportes api-gateway; do \
+      echo "Building $svc"; \
+      (cd $svc && ./mvnw clean package -DskipTests) || true; \
+    done
+
+# Imagen final ligera con JRE y todos los JARs
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /workspace
+COPY --from=build /workspace/eureka/target/*.jar ./eureka/
+COPY --from=build /workspace/authserver/target/*.jar ./authserver/
+COPY --from=build /workspace/usuarios/target/*.jar ./usuarios/
+COPY --from=build /workspace/inventario/target/*.jar ./inventario/
+COPY --from=build /workspace/catalogo/target/*.jar ./catalogo/
+COPY --from=build /workspace/pedidos/target/*.jar ./pedidos/
+COPY --from=build /workspace/carrito/target/*.jar ./carrito/
+COPY --from=build /workspace/reportes/target/*.jar ./reportes/
+COPY --from=build /workspace/api-gateway/target/*.jar ./api-gateway/
+COPY --from=build /workspace/start.sh .
+RUN chmod +x start.sh
+
+# El gateway expone 8080; el resto son internos
+EXPOSE 8080 9000 8761 8081 8082 8083 8084 8085 8086
+
+ENTRYPOINT ["./start.sh"]
