@@ -1,11 +1,10 @@
-# Configuración Railway para servicio único que lanza todo el backend
 [build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile.ra"
 
 [deploy]
 startCommand = "/workspace/start.sh"
-healthcheckPath = "/"
+healthcheckPath = "/actuator/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
